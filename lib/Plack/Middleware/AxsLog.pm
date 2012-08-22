@@ -5,7 +5,7 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/filename rotationtime blackhole/;
+use Plack::Util::Accessor qw/filename rotationtime combined blackhole/;
 use SelectSaver;
 use POSIX qw//;
 use Time::Local qw//;
@@ -26,6 +26,7 @@ sub prepare_app {
     my $self = shift;
     $self->rotationtime(86400) if ! $self->rotationtime;
     die 'rotationtime couldnot less than 60' if $self->rotationtime < 60;
+    $self->combined(1) if ! defined $self->combined;
 }
 
 sub call {
@@ -70,8 +71,8 @@ sub log_line {
 	. q!"! . _safe($env->{REQUEST_METHOD}) . " " . _safe($env->{REQUEST_URI}) . " " . _safe($env->{SERVER_PROTOCOL}) . q!" !
 	. $res->[0] . " "
 	. (defined $length ? "$length" : '-') . " "
-	. q!"! . _string($env->{HTTP_REFERER}) . q!" !
-	. q!"! . _string($env->{HTTP_USER_AGENT}) . q!" !
+	. ($self->combined ? q!"! . _string($env->{HTTP_REFERER}) . q!" ! : '')
+	. ($self->combined ? q!"! . _string($env->{HTTP_USER_AGENT}) . q!" ! : '')
 	. $elapsed
 	. "\n";
 
@@ -168,7 +169,8 @@ use Plack::Builder;
 builder {
   enable AxsLog,
       filename => '/var/log/app/access_log',
-      rotationtime => 3600;
+      rotationtime => 3600,
+      combined => 0;
   $app
 };
 
@@ -193,6 +195,10 @@ default: none (print to stderr)
 =item rotationtime
 
 default: 86400 (1day)
+
+=item combined
+
+log format. if disabled, use common format. default: 1 (enabled)
 
 =back 
 
