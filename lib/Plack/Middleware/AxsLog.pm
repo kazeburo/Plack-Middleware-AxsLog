@@ -75,8 +75,6 @@ sub log_line {
 	defined $length ? $length : '-',
 	q!"! . _string($env->{HTTP_REFERER}) . q!"!,
 	q!"! . _string($env->{HTTP_USER_AGENT}) . q!"!,
-	q!"-"!,
-	q!"-"!,
 	$elapsed
     );
 
