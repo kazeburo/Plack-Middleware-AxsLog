@@ -22,7 +22,7 @@ my $app = builder {
 };
 
 my $log_app = builder {
-    enable 'AccessLog', format => "combined", logger => sub {};
+    enable 'AccessLog', format => "common", logger => sub {};
     sub{ [ 200, [], [ "Hello "] ] };
 };
 
@@ -38,7 +38,7 @@ my $logdispatch_app = builder {
 };
 
 my $axslog_app = builder {
-    enable 'AxsLog', blackhole => 1;
+    enable 'AxsLog', combined => 0, blackhole => 1;
     sub{ [ 200, [], [ "Hello "] ] };
 };
 
