@@ -58,35 +58,32 @@ sub log_line {
     my $self = shift;
     my ($t0, $env, $res, $length) = @_;
 
-    #$res->[0] #status
-    #$res->[1] #header
     my $elapsed = int(Time::HiRes::tv_interval($t0) * 1_000_000);
 
     my @lt = localtime($t0->[0]);
     my $t = sprintf '%02d/%s/%04d:%02d:%02d:%02d %s', $lt[3], $abbr[$lt[4]], $lt[5]+1900, 
 	$lt[2], $lt[1], $lt[0], $tzoffset;
-    my @log_line = (
-	_string($env->{REMOTE_ADDR}),
-	'-',
-	_string($env->{REMOTE_USER}),
-	q![!. $t . q!]!,
-	q!"! . _safe($env->{REQUEST_METHOD}) . " " . _safe($env->{REQUEST_URI}) . " " . $env->{SERVER_PROTOCOL} . q!"!,
-	$res->[0],
-	defined $length ? $length : '-',
-	q!"! . _string($env->{HTTP_REFERER}) . q!"!,
-	q!"! . _string($env->{HTTP_USER_AGENT}) . q!"!,
-	$elapsed
-    );
+    my $log_line =  _string($env->{REMOTE_ADDR}) . " "
+	. '- '
+	. _string($env->{REMOTE_USER}) . " "
+	. q![!. $t . q!] !
+	. q!"! . _safe($env->{REQUEST_METHOD}) . " " . _safe($env->{REQUEST_URI}) . " " . _safe($env->{SERVER_PROTOCOL}) . q!" !
+	. $res->[0] . " "
+	. (defined $length ? "$length" : '-') . " "
+	. q!"! . _string($env->{HTTP_REFERER}) . q!" !
+	. q!"! . _string($env->{HTTP_USER_AGENT}) . q!" !
+	. $elapsed
+	. "\n";
 
     if ( $self->blackhole ) {
 	return;
     }
 
     if ( ! $self->filename ) {
-	$env->{'psgi.errors'}->print( join(" ",@log_line) . "\n" );
+	$env->{'psgi.errors'}->print($log_line);
     }
     else {
-	$self->log_file(join(" ",@log_line) . "\n");
+	$self->log_file($log_line);
     }
 }
 
@@ -162,7 +159,7 @@ __END__
 
 =head1 NAME
 
-Plack::Middleware::AxsLog - Ax's AccessLog
+Plack::Middleware::AxsLog - Alternative AccessLog Middleware
 
 =head1 SYNOPSIS
 

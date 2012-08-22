@@ -52,9 +52,9 @@ cmpthese(timethese(0,{
     'log'   => sub {
         $log_app->($env);
     },
-    'logdispatch'   => sub {
-        $logdispatch_app->($env);
-    },
+#    'logdispatch'   => sub {
+#        $logdispatch_app->($env);
+#    },
     'axslog'   => sub {
         $axslog_app->($env);
     }
