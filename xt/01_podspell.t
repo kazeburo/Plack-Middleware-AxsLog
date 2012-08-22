@@ -9,3 +9,10 @@ __DATA__
 Masahiro Nagano
 kazeburo {at} gmail.com
 Plack::Middleware::AxsLog
+AccessLog
+filename
+lrwxr
+rotationtime
+rw
+stderr
+xr
