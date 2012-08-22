@@ -5,7 +5,7 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/filename rotationtime/;
+use Plack::Util::Accessor qw/filename rotationtime blackhole/;
 use SelectSaver;
 use POSIX qw//;
 use Time::Local qw//;
@@ -79,6 +79,10 @@ sub log_line {
 	q!"-"!,
 	$elapsed
     );
+
+    if ( $self->blackhole ) {
+	return;
+    }
 
     if ( ! $self->filename ) {
 	$env->{'psgi.errors'}->print( join(" ",@log_line) . "\n" );
