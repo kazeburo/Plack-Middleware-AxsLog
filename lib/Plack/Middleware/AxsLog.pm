@@ -14,6 +14,7 @@ use File::Temp qw//;
 
 our $VERSION = '0.01';
 
+## copy from Plack::Middleware::AccessLog
 my $tzoffset = POSIX::strftime("%z", localtime);
 if ( $tzoffset !~ /^[+-]\d{4}$/ ) {
     my @t = localtime(time);
@@ -164,20 +165,20 @@ Plack::Middleware::AxsLog - Alternative AccessLog Middleware
 
 =head1 SYNOPSIS
 
-use Plack::Builder;
-
-builder {
-  enable AxsLog,
-      filename => '/var/log/app/access_log',
-      rotationtime => 3600,
-      combined => 0;
-  $app
-};
-
-$ ls -l /var/log/app
-lrwxr-xr-x   1 ... ...       44 Aug 22 18:00 access_log -> /var/log/app/access_log.2012082218
--rw-r--r--   1 ... ...  1012973 Aug 22 17:59 access_log.2012082217
--rw-r--r--   1 ... ...     1378 Aug 22 18:00 access_log.2012082218
+  use Plack::Builder;
+  
+  builder {
+    enable 'AxsLog',
+        filename => '/var/log/app/access_log',
+        rotationtime => 3600,
+        combined => 0;
+      $app
+  };
+  
+  $ ls -l /var/log/app
+  lrwxr-xr-x   1 ... ...       44 Aug 22 18:00 access_log -> /var/log/app/access_log.2012082218
+  -rw-r--r--   1 ... ...  1012973 Aug 22 17:59 access_log.2012082217
+  -rw-r--r--   1 ... ...     1378 Aug 22 18:00 access_log.2012082218
 
 =head1 DESCRIPTION
 
@@ -190,7 +191,7 @@ Supports auto logfile rotation and makes symlink to newest logfile.
 
 =item filename
 
-default: none (print to stderr)
+default: none (output to stderr)
 
 =item rotationtime
 
@@ -198,7 +199,7 @@ default: 86400 (1day)
 
 =item combined
 
-log format. if disabled, use common format. default: 1 (enabled)
+log format. if disabled, "common" format used. default: 1 (combined format used)
 
 =back 
 
@@ -207,6 +208,8 @@ log format. if disabled, use common format. default: 1 (enabled)
 Masahiro Nagano E<lt>kazeburo {at} gmail.comE<gt>
 
 =head1 SEE ALSO
+
+Plack::Middleware::AccessLog
 
 =head1 LICENSE
 
