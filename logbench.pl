@@ -52,9 +52,9 @@ cmpthese(timethese(0,{
     'log'   => sub {
         $log_app->($env);
     },
-#    'logdispatch'   => sub {
-#        $logdispatch_app->($env);
-#    },
+    'logdispatch'   => sub {
+        $logdispatch_app->($env);
+    },
     'axslog'   => sub {
         $axslog_app->($env);
     }
@@ -62,12 +62,12 @@ cmpthese(timethese(0,{
 
 __END__
 Benchmark: running axslog, log, logdispatch, nolog for at least 3 CPU seconds...
-    axslog:  3 wallclock secs ( 3.17 usr +  0.00 sys =  3.17 CPU) @ 13352.68/s (n=42328)
-       log:  4 wallclock secs ( 3.13 usr +  0.09 sys =  3.22 CPU) @ 3414.91/s (n=10996)
-logdispatch:  3 wallclock secs ( 3.12 usr +  0.13 sys =  3.25 CPU) @ 2152.62/s (n=6996)
-     nolog:  4 wallclock secs ( 3.13 usr +  0.00 sys =  3.13 CPU) @ 341703.83/s (n=1069533)
+    axslog:  3 wallclock secs ( 3.21 usr +  0.00 sys =  3.21 CPU) @ 15707.17/s (n=50420)
+       log:  4 wallclock secs ( 3.18 usr +  0.00 sys =  3.18 CPU) @ 4031.13/s (n=12819)
+logdispatch:  4 wallclock secs ( 3.12 usr +  0.08 sys =  3.20 CPU) @ 2186.25/s (n=6996)
+     nolog:  4 wallclock secs ( 3.07 usr +  0.00 sys =  3.07 CPU) @ 337825.08/s (n=1037123)
                 Rate logdispatch         log      axslog       nolog
-logdispatch   2153/s          --        -37%        -84%        -99%
-log           3415/s         59%          --        -74%        -99%
-axslog       13353/s        520%        291%          --        -96%
-nolog       341704/s      15774%       9906%       2459%          --
+logdispatch   2186/s          --        -46%        -86%        -99%
+log           4031/s         84%          --        -74%        -99%
+axslog       15707/s        618%        290%          --        -95%
+nolog       337825/s      15352%       8280%       2051%          --
