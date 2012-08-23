@@ -185,6 +185,24 @@ Plack::Middleware::AxsLog - Alternative AccessLog Middleware
 Alternative implementation of Plack::Middleware::AccessLog.
 Supports auto logfile rotation and makes symlink to newest logfile.
 
+=head1 LOG FORMAT
+
+AxsLog supports combined and common format. And adds elapsed time in microseconds to last of log line
+
+=over 4
+
+=item combined (NCSA extended/combined log format)
+
+  %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\" %D
+  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.1" 200 645 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" 10941
+
+=item common (Common Log Format)
+
+  %h %l %u %t \"%r\" %>s %b %D 
+  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.0" 200 645 10941
+
+=back
+
 =head1 CONFIGURATION
 
 =over 4
@@ -209,7 +227,7 @@ Masahiro Nagano E<lt>kazeburo {at} gmail.comE<gt>
 
 =head1 SEE ALSO
 
-Plack::Middleware::AccessLog
+Plack::Middleware::AccessLog, http://httpd.apache.org/docs/2.2/en/mod/mod_log_config.html
 
 =head1 LICENSE
 
