@@ -123,36 +123,9 @@ sub log_file {
         open $fh, '>>:utf8', $fname or die "Cannot open file($fname): $!";
         if ( $is_new ) {
             eval {
-                my $symlock = $fname .'_lock';
-                if ( sysopen(my $symlockfh, $symlock, O_CREAT|O_EXCL) ) {
-                    close($symlockfh);
-                    my $symlink = $fname .'_symlink';
-                    symlink($fname, $symlink) or die $!;
-                    rename($symlink, $self->filename) or die $!;
-                    if ( $self->maxage ) {
-                        my $time = time;
-                        my @to_unlink = grep { $time - [stat($_)]->[9] > $self->maxage } glob($self->filename . '.*');
-                        if ( @to_unlink ) {
-                            my $daemon = Proc::Daemon->new();
-                            @to_unlink = map { File::Spec->rel2abs($_) } @to_unlink;
-                            $symlock = File::Spec->rel2abs($symlock);
-                            if ( ! $daemon->Init ) {
-                                sleep $self->sleep_before_remove;
-                                unlink @to_unlink;
-                                unlink $symlock;
-                                POSIX::_exit(0);
-                            }
-                        }
-                        else {
-                            unlink $symlock;
-                        }
-                    }
-                    else {
-                        unlink $symlock;
-                    }
-                }
+                $self->rotation($fname);
             };
-            warn "couldnot make symlink: $@" if $@;
+            warn "failed rotation or symlink: $@" if $@;
         }
         my $saver = SelectSaver->new($fh);
         $| = 1;
@@ -166,6 +139,48 @@ sub log_file {
     $self->{pid} = $$;
 }
 
+sub rotation {
+    my ($self, $fname) = @_;
+
+    my $symlock = $fname .'_lock';
+    sysopen(my $symlockfh, $symlock, O_CREAT|O_EXCL) or return;
+    close($symlockfh);
+    my $symlink = $fname .'_symlink';
+    symlink($fname, $symlink) or die $!;
+    rename($symlink, $self->filename) or die $!;
+    if ( ! $self->maxage ) {
+        unlink $symlock;
+        return;
+    }
+
+    my $time = time;
+    my @to_unlink = grep { $time - [stat($_)]->[9] > $self->maxage } 
+        glob($self->filename . '.*');
+    if ( ! @to_unlink ) {
+        unlink $symlock;
+        return;
+    }
+
+    if ( $self->sleep_before_remove ) {
+        $self->unlink_background(@to_unlink,$symlock);
+    }
+    else {
+        unlink @to_unlink;
+        unlink $symlock;
+    }
+}
+
+sub unlink_background {
+    my ($self, @files) = @_;    
+    my $daemon = Proc::Daemon->new();
+    @files = map { File::Spec->rel2abs($_) } @files;
+    if ( ! $daemon->Init ) {
+        $0 = "$0 axslog unlink worker";
+        sleep $self->sleep_before_remove;
+        unlink @files;
+        POSIX::_exit(0);
+    }
+}
 
 sub _safe {
     my $string = shift;
