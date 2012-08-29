@@ -2,7 +2,8 @@ use inc::Module::Install;
 name 'Plack-Middleware-AxsLog';
 all_from 'lib/Plack/Middleware/AxsLog.pm';
 
-# requires '';
+requires 'Plack';
+requires 'Proc::Daemon';
 
 tests 't/*.t';
 author_tests 'xt';

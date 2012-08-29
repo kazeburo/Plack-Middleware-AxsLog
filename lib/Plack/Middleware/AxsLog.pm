@@ -5,12 +5,13 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/filename rotationtime maxage combined blackhole/;
+use Plack::Util::Accessor qw/filename rotationtime maxage combined sleep_before_remove blackhole/;
 use SelectSaver;
 use POSIX qw//;
 use Time::Local qw//;
 use Fcntl qw/:DEFAULT/;
-use File::Temp qw//;
+use Proc::Daemon;
+use File::Spec;
 
 our $VERSION = '0.01';
 
@@ -28,6 +29,7 @@ sub prepare_app {
     $self->rotationtime(86400) if ! $self->rotationtime;
     die 'rotationtime couldnot less than 60' if $self->rotationtime < 60;
     $self->combined(1) if ! defined $self->combined;
+    $self->sleep_before_remove(3) if ! defined $self->sleep_before_remove;
 }
 
 sub call {
@@ -121,13 +123,33 @@ sub log_file {
         open $fh, '>>:utf8', $fname or die "Cannot open file($fname): $!";
         if ( $is_new ) {
             eval {
-                my $tmp = File::Temp::mktemp($self->filename .'_XXXXXX');
-                symlink $fname, $tmp or die $!;
-                rename $tmp, $self->filename or die $!;
-                if ( $self->maxage ) {
-                    my $time = time;
-                    my @to_unlink = grep { $time - [stat($_)]->[9] > $self->maxage } glob($self->filename . '.*');
-                    unlink @to_unlink;
+                my $symlock = $fname .'_lock';
+                if ( sysopen(my $symlockfh, $symlock, O_CREAT|O_EXCL) ) {
+                    close($symlockfh);
+                    my $symlink = $fname .'_symlink';
+                    symlink($fname, $symlink) or die $!;
+                    rename($symlink, $self->filename) or die $!;
+                    if ( $self->maxage ) {
+                        my $time = time;
+                        my @to_unlink = grep { $time - [stat($_)]->[9] > $self->maxage } glob($self->filename . '.*');
+                        if ( @to_unlink ) {
+                            my $daemon = Proc::Daemon->new();
+                            @to_unlink = map { File::Spec->rel2abs($_) } @to_unlink;
+                            $symlock = File::Spec->rel2abs($symlock);
+                            if ( ! $daemon->Init ) {
+                                sleep $self->sleep_before_remove;
+                                unlink @to_unlink;
+                                unlink $symlock;
+                                exit;
+                            }
+                        }
+                        else {
+                            unlink $symlock;
+                        }
+                    }
+                    else {
+                        unlink $symlock;
+                    }
                 }
             };
             warn "couldnot make symlink: $@" if $@;
