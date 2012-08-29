@@ -95,11 +95,7 @@ sub _gen_filename {
     my $now = time;
     my $time = $now - ($now % $self->rotationtime);
     my @lt = localtime($time);
-    return $self->filename .'.'. (
-        ( $self->rotationtime < 3600 ) 
-            ? sprintf('%04d%02d%02d%02d%02d', $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1]) 
-            : sprintf('%04d%02d%02d%02d', $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2])
-    );
+    return $self->filename .'.'. sprintf('%04d%02d%02d%02d%02d', $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1]);
 }
 
 
@@ -148,6 +144,7 @@ sub rotation {
     my $symlink = $fname .'_symlink';
     symlink($fname, $symlink) or die $!;
     rename($symlink, $self->filename) or die $!;
+
     if ( ! $self->maxage ) {
         unlink $symlock;
         return;
@@ -217,9 +214,9 @@ Plack::Middleware::AxsLog - Alternative AccessLog Middleware
   };
   
   $ ls -l /var/log/app
-  lrwxr-xr-x   1 ... ...       44 Aug 22 18:00 access_log -> /var/log/app/access_log.2012082218
-  -rw-r--r--   1 ... ...  1012973 Aug 22 17:59 access_log.2012082217
-  -rw-r--r--   1 ... ...     1378 Aug 22 18:00 access_log.2012082218
+  lrwxr-xr-x   1 ... ...       44 Aug 22 18:00 access_log -> /var/log/app/access_log.201208221800
+  -rw-r--r--   1 ... ...  1012973 Aug 22 17:59 access_log.201208221759
+  -rw-r--r--   1 ... ...     1378 Aug 22 18:00 access_log.201208221800
 
 =head1 DESCRIPTION
 
@@ -264,6 +261,13 @@ log format. if disabled, "common" format used. default: 1 (combined format used)
 
 Maximum age of files (based on mtime), in seconds. After the age is surpassed, 
 files older than this age will be deleted. Optional. Default is undefined, which means unlimited.
+old files are removed at a background unlink worker.
+
+=item sleep_before_remove
+
+Sleep seconds before remove old log files. default: 3
+if sleep_before_remove == 0, files are removed within plack processes, does not fork background 
+unlink worker.
 
 =back 
 
