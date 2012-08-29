@@ -140,7 +140,7 @@ sub log_file {
                                 sleep $self->sleep_before_remove;
                                 unlink @to_unlink;
                                 unlink $symlock;
-                                exit;
+                                POSIX::_exit(0);
                             }
                         }
                         else {
