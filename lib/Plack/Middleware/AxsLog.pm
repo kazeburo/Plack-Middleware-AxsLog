@@ -8,9 +8,7 @@ use Time::HiRes qw/gettimeofday/;
 use Plack::Util::Accessor qw/filename rotationtime maxage combined sleep_before_remove blackhole/;
 use POSIX qw//;
 use Time::Local qw//;
-use Fcntl qw/:DEFAULT/;
-use Proc::Daemon;
-use File::Spec;
+use File::RotateLogs;
 
 our $VERSION = '0.01';
 
@@ -29,6 +27,15 @@ sub prepare_app {
     die 'rotationtime couldnot less than 60' if $self->rotationtime < 60;
     $self->combined(1) if ! defined $self->combined;
     $self->sleep_before_remove(3) if ! defined $self->sleep_before_remove;
+    if ( $self->filename ) {
+        $self->{rotatelogs} = File::RotateLogs->new(
+            logfile => $self->filename . '.%Y%m%d%H%M',
+            linkname => $self->filename,
+            rotationtime => $self->rotationtime,
+            maxage => $self->maxage || 0,
+            sleep_before_remove => $self->sleep_before_remove,
+        );
+    }
 }
 
 sub call {
@@ -85,94 +92,7 @@ sub log_line {
         $env->{'psgi.errors'}->print($log_line);
     }
     else {
-        $self->log_file($log_line);
-    }
-}
-
-sub _gen_filename {
-    my $self = shift;
-    my $now = time;
-    my $time = $now - ($now % $self->rotationtime);
-    my @lt = localtime($time);
-    return $self->filename .'.'. sprintf('%04d%02d%02d%02d%02d', $lt[5]+1900,$lt[4]+1,$lt[3],$lt[2],$lt[1]);
-}
-
-
-sub log_file {
-    my ($self,$log) = @_;
-    my $fname = $self->_gen_filename;
-    my $fh;
-    if ( $self->{fh} ) {
-        if ( $fname eq $self->{fname} && $self->{pid} == $$ ) {
-            $fh = delete $self->{fh};
-        }
-        else {
-            $fh = delete $self->{fh};
-            close $fh if $fh;
-            undef $fh;
-        }
-    }
-
-    unless ($fh) {
-        my $is_new = ( ! -f $fname || ! -l $self->filename ) ? 1 : 0;
-        open $fh, '>>:unix', $fname or die "Cannot open file($fname): $!";
-        if ( $is_new ) {
-            eval {
-                $self->rotation($fname);
-            };
-            warn "failed rotation or symlink: $@" if $@;
-        }
-    }
-
-    $fh->print($log)
-        or die "Cannot write to $fname: $!";
-
-    $self->{fh} = $fh;
-    $self->{fname} = $fname;
-    $self->{pid} = $$;
-}
-
-sub rotation {
-    my ($self, $fname) = @_;
-
-    my $symlock = $fname .'_lock';
-    sysopen(my $symlockfh, $symlock, O_CREAT|O_EXCL) or return;
-    close($symlockfh);
-    my $symlink = $fname .'_symlink';
-    symlink($fname, $symlink) or die $!;
-    rename($symlink, $self->filename) or die $!;
-
-    if ( ! $self->maxage ) {
-        unlink $symlock;
-        return;
-    }
-
-    my $time = time;
-    my @to_unlink = grep { $time - [stat($_)]->[9] > $self->maxage } 
-        glob($self->filename . '.*');
-    if ( ! @to_unlink ) {
-        unlink $symlock;
-        return;
-    }
-
-    if ( $self->sleep_before_remove ) {
-        $self->unlink_background(@to_unlink,$symlock);
-    }
-    else {
-        unlink $_ for @to_unlink;
-        unlink $symlock;
-    }
-}
-
-sub unlink_background {
-    my ($self, @files) = @_;    
-    my $daemon = Proc::Daemon->new();
-    @files = map { File::Spec->rel2abs($_) } @files;
-    if ( ! $daemon->Init ) {
-        $0 = "$0 axslog unlink worker";
-        sleep $self->sleep_before_remove;
-        unlink $_ for @files;
-        POSIX::_exit(0);
+        $self->{rotatelogs}->print($log_line);
     }
 }
 
@@ -242,6 +162,10 @@ AxsLog supports combined and common format. And adds elapsed time in microsecond
 
 =over 4
 
+=item combined
+
+log format. if disabled, "common" format used. default: 1 (combined format used)
+
 =item filename
 
 default: none (output to stderr)
@@ -249,10 +173,6 @@ default: none (output to stderr)
 =item rotationtime
 
 default: 86400 (1day)
-
-=item combined
-
-log format. if disabled, "common" format used. default: 1 (combined format used)
 
 =item maxage
 
@@ -274,7 +194,7 @@ Masahiro Nagano E<lt>kazeburo {at} gmail.comE<gt>
 
 =head1 SEE ALSO
 
-Plack::Middleware::AccessLog, http://httpd.apache.org/docs/2.2/en/mod/mod_log_config.html
+L<File::RotateLogs>, L<Plack::Middleware::AccessLog>, http://httpd.apache.org/docs/2.2/en/mod/mod_log_config.html
 
 =head1 LICENSE
 
