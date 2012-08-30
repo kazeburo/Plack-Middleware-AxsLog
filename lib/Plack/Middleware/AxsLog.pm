@@ -6,7 +6,6 @@ use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
 use Plack::Util::Accessor qw/filename rotationtime maxage combined sleep_before_remove blackhole/;
-use SelectSaver;
 use POSIX qw//;
 use Time::Local qw//;
 use Fcntl qw/:DEFAULT/;
@@ -116,15 +115,13 @@ sub log_file {
 
     unless ($fh) {
         my $is_new = ( ! -f $fname || ! -l $self->filename ) ? 1 : 0;
-        open $fh, '>>:utf8', $fname or die "Cannot open file($fname): $!";
+        open $fh, '>>:unix', $fname or die "Cannot open file($fname): $!";
         if ( $is_new ) {
             eval {
                 $self->rotation($fname);
             };
             warn "failed rotation or symlink: $@" if $@;
         }
-        my $saver = SelectSaver->new($fh);
-        $| = 1;
     }
 
     $fh->print($log)
@@ -162,7 +159,7 @@ sub rotation {
         $self->unlink_background(@to_unlink,$symlock);
     }
     else {
-        unlink @to_unlink;
+        unlink $_ for @to_unlink;
         unlink $symlock;
     }
 }
@@ -174,7 +171,7 @@ sub unlink_background {
     if ( ! $daemon->Init ) {
         $0 = "$0 axslog unlink worker";
         sleep $self->sleep_before_remove;
-        unlink @files;
+        unlink $_ for @files;
         POSIX::_exit(0);
     }
 }
