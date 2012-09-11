@@ -20,3 +20,6 @@
 ^\.git/
 \.sw[po]$
 logbench\.pl
+^nytprof/
+MYMETA.json
+MYMETA.yml
