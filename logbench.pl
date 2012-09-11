@@ -48,13 +48,15 @@ cmpthese(timethese(0,{
 }));
 
 __END__
-Benchmark: running axslog, log, nolog for at least 3 CPU seconds...
-    axslog:  3 wallclock secs ( 3.10 usr +  0.00 sys =  3.10 CPU) @ 16550.32/s (n=51306)
-       log:  4 wallclock secs ( 3.09 usr +  0.01 sys =  3.10 CPU) @ 3310.00/s (n=10261)
-     nolog:  4 wallclock secs ( 3.18 usr +  0.00 sys =  3.18 CPU) @ 426020.75/s (n=1354746)
-           Rate    log axslog  nolog
-log      3310/s     --   -80%   -99%
-axslog  16550/s   400%     --   -96%
-nolog  426021/s 12771%  2474%     --
+Benchmark: running axslog, error_only_axslog, log, nolog for at least 3 CPU seconds...
+    axslog:  3 wallclock secs ( 3.09 usr +  0.02 sys =  3.11 CPU) @ 16011.90/s (n=49797)
+error_only_axslog:  3 wallclock secs ( 3.08 usr +  0.02 sys =  3.10 CPU) @ 57725.48/s (n=178949)
+       log:  3 wallclock secs ( 3.16 usr +  0.01 sys =  3.17 CPU) @ 3338.17/s (n=10582)
+     nolog:  2 wallclock secs ( 3.08 usr +  0.00 sys =  3.08 CPU) @ 426523.70/s (n=1313693)
+                      Rate         log      axslog error_only_axslog       nolog
+log                 3338/s          --        -79%              -94%        -99%
+axslog             16012/s        380%          --              -72%        -96%
+error_only_axslog  57725/s       1629%        261%                --        -86%
+nolog             426524/s      12677%       2564%              639%          --
 
 
