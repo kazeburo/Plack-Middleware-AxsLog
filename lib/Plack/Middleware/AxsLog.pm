@@ -127,7 +127,7 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
 =head1 DESCRIPTION
 
 Alternative implementation of Plack::Middleware::AccessLog.
-Only supports combined and common format, but faster than Plack::Middleware::AccessLog
+Only supports combined and common format, but 3x-4x faster than Plack::Middleware::AccessLog
 
 =head1 LOG FORMAT
 
@@ -157,7 +157,7 @@ log format. if disabled, "common" format used. default: 1 (combined format used)
 
 =item timed: Bool
 
-Adds times to serve the request. default: 0
+Adds time to serve the request. default: 0
 
 =item logger: Coderef
 
