@@ -5,10 +5,9 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/filename rotationtime maxage combined sleep_before_remove blackhole/;
+use Plack::Util::Accessor qw/timed combined logger/;
 use POSIX qw//;
 use Time::Local qw//;
-use File::RotateLogs;
 
 our $VERSION = '0.01';
 
@@ -23,19 +22,8 @@ my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 
 sub prepare_app {
     my $self = shift;
-    $self->rotationtime(86400) if ! $self->rotationtime;
-    die 'rotationtime couldnot less than 60' if $self->rotationtime < 60;
     $self->combined(1) if ! defined $self->combined;
-    $self->sleep_before_remove(3) if ! defined $self->sleep_before_remove;
-    if ( $self->filename ) {
-        $self->{rotatelogs} = File::RotateLogs->new(
-            logfile => $self->filename . '.%Y%m%d%H%M',
-            linkname => $self->filename,
-            rotationtime => $self->rotationtime,
-            maxage => $self->maxage || 0,
-            sleep_before_remove => $self->sleep_before_remove,
-        );
-    }
+    $self->timed(0) if ! defined $self->timed;
 }
 
 sub call {
@@ -45,6 +33,13 @@ sub call {
     my $t0 = [gettimeofday];
 
     my $res = $self->app->($env);
+    if ( ref($res) && ref($res) eq 'ARRAY' && @$res == 3 ) {
+        my $length = Plack::Util::content_length($res->[2]);
+        if ( defined $length ) {
+            $self->log_line($t0, $env,$res,$length);
+            return $res;
+        }        
+    }
     Plack::Util::response_cb($res, sub {
         my $res = shift;
         my $length = Plack::Util::content_length($res->[2]);
@@ -77,22 +72,19 @@ sub log_line {
         . '- '
             . _string($env->{REMOTE_USER}) . " "
                 . q![!. $t . q!] !
-                . q!"! . _safe($env->{REQUEST_METHOD}) . " " . _safe($env->{REQUEST_URI}) . " " . _safe($env->{SERVER_PROTOCOL}) . q!" !
+                . _safe(q!"! . $env->{REQUEST_METHOD} . " " . $env->{REQUEST_URI} . " " . $env->{SERVER_PROTOCOL} . q!" !)
                 . $res->[0] . " "
-                . (defined $length ? "$length" : '-') . " "
-                . ($self->combined ? q!"! . _string($env->{HTTP_REFERER}) . q!" ! : '')
-                . ($self->combined ? q!"! . _string($env->{HTTP_USER_AGENT}) . q!" ! : '')
-                . $elapsed
+                . (defined $length ? "$length" : '-')
+                . ($self->{combined} ? q! "! . _string($env->{HTTP_REFERER}) . q!" ! : '')
+                . ($self->{combined} ? q!"! . _string($env->{HTTP_USER_AGENT}) . q!"! : '')
+                . ($self->{timed} ? " $elapsed" : '')
                 . "\n";
 
-    if ( $self->blackhole ) {
-        return;
-    }
-    if ( ! $self->filename ) {
+    if ( ! $self->{logger} ) {
         $env->{'psgi.errors'}->print($log_line);
     }
     else {
-        $self->{rotatelogs}->print($log_line);
+        $self->{logger}->($log_line);
     }
 }
 
@@ -115,30 +107,27 @@ __END__
 
 =head1 NAME
 
-Plack::Middleware::AxsLog - Alternative AccessLog Middleware
+Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
 
 =head1 SYNOPSIS
 
   use Plack::Builder;
-  
+  use File::RotateLogs;
+
+  my $logger = File::RotateLogs->new();
+
   builder {
-    enable 'AxsLog',
-        filename => '/var/log/app/access_log',
-        rotationtime => 3600,
-        maxage => 86400, #1day
-        combined => 0;
+      enable 'AxsLog',
+        combined => 1,
+        timed => 1,
+        logger => sub { $logger->print(@_) }
       $app
   };
-  
-  $ ls -l /var/log/app
-  lrwxr-xr-x   1 ... ...       44 Aug 22 18:00 access_log -> /var/log/app/access_log.201208221800
-  -rw-r--r--   1 ... ...  1012973 Aug 22 17:59 access_log.201208221759
-  -rw-r--r--   1 ... ...     1378 Aug 22 18:00 access_log.201208221800
 
 =head1 DESCRIPTION
 
 Alternative implementation of Plack::Middleware::AccessLog.
-Supports auto logfile rotation and makes symlink to newest logfile.
+Only supports combined and common format, but faster than Plack::Middleware::AccessLog
 
 =head1 LOG FORMAT
 
@@ -162,31 +151,19 @@ AxsLog supports combined and common format. And adds elapsed time in microsecond
 
 =over 4
 
-=item combined
+=item combined: Bool
 
 log format. if disabled, "common" format used. default: 1 (combined format used)
 
-=item filename
+=item timed: Bool
 
-default: none (output to stderr)
+Adds times to serve the request. default: 0
 
-=item rotationtime
+=item logger: Coderef
 
-default: 86400 (1day)
+Callback to print logs. default:none ( output to psgi.errors )
 
-=item maxage
-
-Maximum age of files (based on mtime), in seconds. After the age is surpassed, 
-files older than this age will be deleted. Optional. Default is undefined, which means unlimited.
-old files are removed at a background unlink worker.
-
-=item sleep_before_remove
-
-Sleep seconds before remove old log files. default: 3
-if sleep_before_remove == 0, files are removed within plack processes, does not fork background 
-unlink worker.
-
-=back 
+=back
 
 =head1 AUTHOR
 
@@ -194,7 +171,7 @@ Masahiro Nagano E<lt>kazeburo {at} gmail.comE<gt>
 
 =head1 SEE ALSO
 
-L<File::RotateLogs>, L<Plack::Middleware::AccessLog>, http://httpd.apache.org/docs/2.2/en/mod/mod_log_config.html
+L<File::RotateLogs>, L<Plack::Middleware::AccessLog>
 
 =head1 LICENSE
 
