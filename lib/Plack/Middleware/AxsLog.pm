@@ -5,9 +5,10 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/timed combined logger/;
+use Plack::Util::Accessor qw/timed combined error_only logger/;
 use POSIX qw//;
 use Time::Local qw//;
+use HTTP::Status qw//;
 
 our $VERSION = '0.01';
 
@@ -24,6 +25,7 @@ sub prepare_app {
     my $self = shift;
     $self->combined(1) if ! defined $self->combined;
     $self->timed(0) if ! defined $self->timed;
+    $self->error_only(0) if ! defined $self->error_only;
 }
 
 sub call {
@@ -62,6 +64,10 @@ sub call {
 sub log_line {
     my $self = shift;
     my ($t0, $env, $res, $length) = @_;
+
+    if ( $self->{error_only} && !HTTP::Status::is_error( $res->[0] ) ) {
+        return;
+    }
 
     my $elapsed = int(Time::HiRes::tv_interval($t0) * 1_000_000);
 
@@ -158,6 +164,10 @@ log format. if disabled, "common" format used. default: 1 (combined format used)
 =item timed: Bool
 
 Adds time to serve the request. default: 0
+
+=item error_only: Bool
+
+Display logs if response status is error (4xx or 5xx). default: 0
 
 =item logger: Coderef
 
