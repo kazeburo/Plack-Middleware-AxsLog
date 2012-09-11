@@ -131,6 +131,7 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
       enable 'AxsLog',
         combined => 1,
         timed => 1,
+        error_only => 1,
         logger => sub { $logger->print(@_) }
       $app
   };
@@ -138,7 +139,8 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
 =head1 DESCRIPTION
 
 Alternative implementation of Plack::Middleware::AccessLog.
-Only supports combined and common format, but 3x-4x faster than Plack::Middleware::AccessLog
+Only supports combined and common format, but 3x-4x faster than Plack::Middleware::AccessLog.
+And also supports filter logs by response_time and status code.
 
 =head1 LOG FORMAT
 
