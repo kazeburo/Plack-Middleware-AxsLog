@@ -23,6 +23,11 @@ my $axslog_app = builder {
     sub{ [ 200, [], [ "Hello "] ] };
 };
 
+my $axslog_error_only_app = builder {
+    enable 'AxsLog', combined => 1, timed => 1, error_only => 1;
+    sub{ [ 200, [], [ "Hello "] ] };
+};
+
 
 my $env = req_to_psgi(GET "/");
 open(STDERR,'>','/dev/null');
@@ -36,6 +41,9 @@ cmpthese(timethese(0,{
     },
     'axslog'   => sub {
         $axslog_app->($env);
+    },
+    'error_only_axslog'   => sub {
+        $axslog_error_only_app->($env);
     }
 }));
 

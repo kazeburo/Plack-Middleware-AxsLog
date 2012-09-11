@@ -5,7 +5,7 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/timed combined error_only logger/;
+use Plack::Util::Accessor qw/timed combined error_only long_response_time logger/;
 use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
@@ -26,6 +26,7 @@ sub prepare_app {
     $self->combined(1) if ! defined $self->combined;
     $self->timed(0) if ! defined $self->timed;
     $self->error_only(0) if ! defined $self->error_only;
+    $self->long_response_time(0) if ! defined $self->long_response_time;
 }
 
 sub call {
@@ -35,7 +36,7 @@ sub call {
     my $t0 = [gettimeofday];
 
     my $res = $self->app->($env);
-    if ( ref($res) && ref($res) eq 'ARRAY' && @$res == 3 ) {
+    if ( ref($res) && ref($res) eq 'ARRAY' ) {
         my $length = Plack::Util::content_length($res->[2]);
         if ( defined $length ) {
             $self->log_line($t0, $env,$res,$length);
@@ -70,6 +71,10 @@ sub log_line {
     }
 
     my $elapsed = int(Time::HiRes::tv_interval($t0) * 1_000_000);
+
+    if ( $elapsed < $self->{long_response_time} ) {
+        return;
+    }
 
     my @lt = localtime($t0->[0]);
     my $t = sprintf '%02d/%s/%04d:%02d:%02d:%02d %s', $lt[3], $abbr[$lt[4]], $lt[5]+1900, 
@@ -168,6 +173,10 @@ Adds time to serve the request. default: 0
 =item error_only: Bool
 
 Display logs if response status is error (4xx or 5xx). default: 0
+
+=item long_response_time: Int (microseconds)
+
+Display log only if time to serve the request is above long_response_time. default: 0 (all request logged)
 
 =item logger: Coderef
 
