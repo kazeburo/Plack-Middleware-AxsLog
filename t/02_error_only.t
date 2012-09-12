@@ -18,7 +18,7 @@ use Test::More;
             my $cb = shift;
             my $res = $cb->(GET "/");
             chomp $log;
-            ok !$log;
+            ok !$log, 'a';
         };
 }
 
@@ -34,7 +34,7 @@ use Test::More;
             my $cb = shift;
             my $res = $cb->(GET "/");
             chomp $log;
-            ok $log;
+            ok $log, 'b';
         };
 }
 
@@ -50,7 +50,7 @@ use Test::More;
             my $cb = shift;
             my $res = $cb->(GET "/");
             chomp $log;
-            ok !$log;
+            ok !$log, 'c';
         };
 }
 
@@ -66,7 +66,7 @@ use Test::More;
             my $cb = shift;
             my $res = $cb->(GET "/");
             chomp $log;
-            ok $log;
+            ok $log, 'd';
         };
 }
 
@@ -82,7 +82,55 @@ use Test::More;
             my $cb = shift;
             my $res = $cb->(GET "/");
             chomp $log;
-            ok $log;
+            ok $log, 'e';
+        };
+}
+
+{
+    my $log = '';
+    my $app = builder {
+        enable 'AxsLog', error_only => 1, long_response_time => 1_500_000, logger => sub { $log .= $_[0] };
+        sub{ sleep 1; [ 500, [], [ "Hello "] ] };
+    };
+    test_psgi
+        app => $app,
+        client => sub {
+            my $cb = shift;
+            my $res = $cb->(GET "/");
+            chomp $log;
+            ok $log, 'f';
+        };
+}
+
+{
+    my $log = '';
+    my $app = builder {
+        enable 'AxsLog', error_only => 1, long_response_time => 500_000, logger => sub { $log .= $_[0] };
+        sub{ sleep 1; [ 500, [], [ "Hello "] ] };
+    };
+    test_psgi
+        app => $app,
+        client => sub {
+            my $cb = shift;
+            my $res = $cb->(GET "/");
+            chomp $log;
+            ok $log, 'g';
+        };
+}
+
+{
+    my $log = '';
+    my $app = builder {
+        enable 'AxsLog', error_only => 1, long_response_time => 1_500_000, logger => sub { $log .= $_[0] };
+        sub{ sleep 1; [ 200, [], [ "Hello "] ] };
+    };
+    test_psgi
+        app => $app,
+        client => sub {
+            my $cb = shift;
+            my $res = $cb->(GET "/");
+            chomp $log;
+            ok !$log, 'h';
         };
 }
 

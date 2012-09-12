@@ -19,12 +19,12 @@ my $log_app = builder {
 
 
 my $axslog_app = builder {
-    enable 'AxsLog', combined => 1, timed => 1;
+    enable 'AxsLog', combined => 1, response_time => 1;
     sub{ [ 200, [], [ "Hello "] ] };
 };
 
 my $axslog_error_only_app = builder {
-    enable 'AxsLog', combined => 1, timed => 1, error_only => 1;
+    enable 'AxsLog', combined => 1, response_time => 1, error_only => 1;
     sub{ [ 200, [], [ "Hello "] ] };
 };
 

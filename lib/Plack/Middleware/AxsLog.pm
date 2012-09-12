@@ -66,13 +66,13 @@ sub log_line {
     my $self = shift;
     my ($t0, $env, $res, $length) = @_;
 
-    if ( $self->{error_only} && !HTTP::Status::is_error( $res->[0] ) && !$self->{long_response_time} ) {
-        return;
-    }
-
     my $elapsed = int(Time::HiRes::tv_interval($t0) * 1_000_000);
 
-    if ( $elapsed < $self->{long_response_time} ) {
+    unless (
+         ( $self->{long_response_time} == 0 && !$self->{error_only} )
+      || ( $self->{long_response_time} != 0 && $elapsed >= $self->{long_response_time} ) 
+      || ( $self->{error_only} && HTTP::Status::is_error($res->[0]) ) 
+    ) {
         return;
     }
 
