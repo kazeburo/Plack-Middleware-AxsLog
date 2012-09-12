@@ -179,7 +179,7 @@ Display logs if response status is error (4xx or 5xx). default: 0
 
 =item long_response_time: Int (microseconds)
 
-Display log only if time to serve the request is above long_response_time. default: 0 (all request logged)
+Display log if time to serve the request is above long_response_time. default: 0 (all request logged)
 
 =item logger: Coderef
 

@@ -3,6 +3,7 @@ name 'Plack-Middleware-AxsLog';
 all_from 'lib/Plack/Middleware/AxsLog.pm';
 
 requires 'Plack';
+requires 'HTTP::Status';
 
 tests 't/*.t';
 author_tests 'xt';
