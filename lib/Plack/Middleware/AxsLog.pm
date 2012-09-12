@@ -5,7 +5,7 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/timed combined error_only long_response_time logger/;
+use Plack::Util::Accessor qw/response_time combined error_only long_response_time logger/;
 use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
@@ -24,7 +24,7 @@ my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 sub prepare_app {
     my $self = shift;
     $self->combined(1) if ! defined $self->combined;
-    $self->timed(0) if ! defined $self->timed;
+    $self->response_time(0) if ! defined $self->response_time;
     $self->error_only(0) if ! defined $self->error_only;
     $self->long_response_time(0) if ! defined $self->long_response_time;
 }
@@ -66,7 +66,7 @@ sub log_line {
     my $self = shift;
     my ($t0, $env, $res, $length) = @_;
 
-    if ( $self->{error_only} && !HTTP::Status::is_error( $res->[0] ) ) {
+    if ( $self->{error_only} && !HTTP::Status::is_error( $res->[0] ) && !$self->{long_response_time} ) {
         return;
     }
 
@@ -88,7 +88,7 @@ sub log_line {
                 . (defined $length ? "$length" : '-')
                 . ($self->{combined} ? q! "! . _string($env->{HTTP_REFERER}) . q!" ! : '')
                 . ($self->{combined} ? q!"! . _string($env->{HTTP_USER_AGENT}) . q!"! : '')
-                . ($self->{timed} ? " $elapsed" : '')
+                . ($self->{response_time} ? " $elapsed" : '')
                 . "\n";
 
     if ( ! $self->{logger} ) {
@@ -130,7 +130,7 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
   builder {
       enable 'AxsLog',
         combined => 1,
-        timed => 1,
+        response_time => 1,
         error_only => 1,
         logger => sub { $logger->print(@_) }
       $app
@@ -168,7 +168,7 @@ AxsLog supports combined and common format. And adds elapsed time in microsecond
 
 log format. if disabled, "common" format used. default: 1 (combined format used)
 
-=item timed: Bool
+=item response_time: Bool
 
 Adds time to serve the request. default: 0
 

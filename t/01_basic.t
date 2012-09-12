@@ -9,7 +9,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', combined => 1, timed => 1, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', combined => 1, response_time => 1, logger => sub { $log .= $_[0] };
         sub{ [ 200, [], [ "Hello "] ] };
     };
     test_psgi
@@ -25,7 +25,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', combined => 0, timed => 0, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', combined => 0, response_time => 0, logger => sub { $log .= $_[0] };
         sub{ [ 200, [], [ "Hello "] ] };
     };
     test_psgi
@@ -42,7 +42,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', combined => 0, timed => 1, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', combined => 0, response_time => 1, logger => sub { $log .= $_[0] };
         sub{ [ 200, [], [ "Hello "] ] };
     };
     test_psgi
@@ -59,7 +59,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', combined => 0, timed => 1, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', combined => 0, response_time => 1, logger => sub { $log .= $_[0] };
         sub{
             my $env = shift;
             sub {
@@ -81,7 +81,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', combined => 0, timed => 1, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', combined => 0, response_time => 1, logger => sub { $log .= $_[0] };
         sub{
             my $env = shift;
             sub {
