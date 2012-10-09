@@ -10,7 +10,7 @@ use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 ## copy from Plack::Middleware::AccessLog
 my $tzoffset = POSIX::strftime("%z", localtime);
@@ -123,16 +123,12 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
 =head1 SYNOPSIS
 
   use Plack::Builder;
-  use File::RotateLogs;
-
-  my $logger = File::RotateLogs->new();
 
   builder {
       enable 'AxsLog',
         combined => 1,
         response_time => 1,
         error_only => 1,
-        logger => sub { $logger->print(@_) }
       $app
   };
 
@@ -185,6 +181,15 @@ Display log if time to serve the request is above long_response_time. default: 0
 
 Callback to print logs. default:none ( output to psgi.errors )
 
+  use File::RotateLogs;
+  my $logger = File::RotateLogs->new();
+
+  builder {
+      enable 'AxsLog',
+        logger => sub { $logger->print(@_) }
+      $app
+  };
+
 =back
 
 =head1 AUTHOR
@@ -193,7 +198,7 @@ Masahiro Nagano E<lt>kazeburo {at} gmail.comE<gt>
 
 =head1 SEE ALSO
 
-L<File::RotateLogs>, L<Plack::Middleware::AccessLog>
+L<Plack::Middleware::AccessLog>
 
 =head1 LICENSE
 

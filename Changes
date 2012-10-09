@@ -1,4 +1,7 @@
 Revision history for Perl extension Plack::Middleware::AxsLog
 
+0.02    Tue Oct 9 11:45:11 2012
+        - updated doc
+
 0.01    Wed Aug 22 16:11:51 2012
         - original version
