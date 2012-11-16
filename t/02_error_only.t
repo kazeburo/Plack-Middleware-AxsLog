@@ -121,7 +121,7 @@ use Test::More;
 {
     my $log = '';
     my $app = builder {
-        enable 'AxsLog', error_only => 1, long_response_time => 1_500_000, logger => sub { $log .= $_[0] };
+        enable 'AxsLog', error_only => 1, long_response_time => 5_000_000, logger => sub { $log .= $_[0] };
         sub{ sleep 1; [ 200, [], [ "Hello "] ] };
     };
     test_psgi
