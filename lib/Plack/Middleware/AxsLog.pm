@@ -10,7 +10,7 @@ use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 ## copy from Plack::Middleware::AccessLog
 my $tzoffset = POSIX::strftime("%z", localtime);
