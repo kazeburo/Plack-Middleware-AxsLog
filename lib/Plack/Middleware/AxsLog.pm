@@ -130,23 +130,7 @@ This module uses L<Apache::LogFormat::Compiler>, so 4x-5x faster than
 Plack::Middleware::AccessLog in micro benchmarking.
 AxsLog also can set condition to display logs by response_time and status code.
 
-=head1 LOG FORMAT
-
-AxsLog supports combined, common and ltsv format. And adds elapsed time in microseconds to last of log line
-
-=over 4
-
-=item combined (NCSA extended/combined log format)
-
-  %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\" %D
-  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.1" 200 645 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" 10941
-
-
-
-
-=back
-
-=head1 CONFIGURATION
+=head1 ARGUMENTS
 
 =over 4
 
@@ -182,6 +166,12 @@ See also L<http://ltsv.org/>
 =item format: String
 
 A format string.
+
+  builder {
+      enable 'AxsLog', 
+          format => '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %D';
+      $app
+  };
 
 See details on perldoc L<Apache::LogFormat::Compiler>
 
