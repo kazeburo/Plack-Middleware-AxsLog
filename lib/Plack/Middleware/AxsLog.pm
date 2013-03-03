@@ -11,7 +11,7 @@ use Time::Local qw//;
 use HTTP::Status qw//;
 use Apache::LogFormat::Compiler;
 
-our $VERSION = '0.03';
+our $VERSION = '0.10';
 
 sub prepare_app {
     my $self = shift;

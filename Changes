@@ -1,5 +1,9 @@
 Revision history for Perl extension Plack::Middleware::AxsLog
 
+0.10    Sun Mar 3 16:38:54 2012
+        - supports any format with Apache::LogFormat::Compiler
+          be 3% faster than previous version
+
 0.03    Fri Feb 8 13:56:20 2013
         - supports LTSV format
 
