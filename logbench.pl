@@ -23,6 +23,12 @@ my $axslog_app = builder {
     sub{ [ 200, [], [ "Hello "] ] };
 };
 
+my $axslog_format_app = builder {
+    enable 'AxsLog', format => '%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i" %D';
+    sub{ [ 200, [], [ "Hello "] ] };
+};
+
+
 my $axslog_error_only_app = builder {
     enable 'AxsLog', combined => 1, response_time => 1, error_only => 1;
     sub{ [ 200, [], [ "Hello "] ] };
@@ -42,21 +48,26 @@ cmpthese(timethese(0,{
     'axslog'   => sub {
         $axslog_app->($env);
     },
+    'axslog_format'   => sub {
+        $axslog_format_app->($env);
+    },
     'error_only_axslog'   => sub {
         $axslog_error_only_app->($env);
     }
 }));
 
 __END__
-Benchmark: running axslog, error_only_axslog, log, nolog for at least 3 CPU seconds...
-    axslog:  3 wallclock secs ( 3.09 usr +  0.02 sys =  3.11 CPU) @ 16011.90/s (n=49797)
-error_only_axslog:  3 wallclock secs ( 3.08 usr +  0.02 sys =  3.10 CPU) @ 57725.48/s (n=178949)
-       log:  3 wallclock secs ( 3.16 usr +  0.01 sys =  3.17 CPU) @ 3338.17/s (n=10582)
-     nolog:  2 wallclock secs ( 3.08 usr +  0.00 sys =  3.08 CPU) @ 426523.70/s (n=1313693)
-                      Rate         log      axslog error_only_axslog       nolog
-log                 3338/s          --        -79%              -94%        -99%
-axslog             16012/s        380%          --              -72%        -96%
-error_only_axslog  57725/s       1629%        261%                --        -86%
-nolog             426524/s      12677%       2564%              639%          --
+Benchmark: running axslog, axslog_format, error_only_axslog, log, nolog for at least 3 CPU seconds...
+    axslog:  4 wallclock secs ( 3.17 usr +  0.02 sys =  3.19 CPU) @ 16083.39/s (n=51306)
+axslog_format:  3 wallclock secs ( 3.02 usr +  0.02 sys =  3.04 CPU) @ 15986.84/s (n=48600)
+error_only_axslog:  4 wallclock secs ( 3.20 usr +  0.03 sys =  3.23 CPU) @ 41389.16/s (n=133687)
+       log:  3 wallclock secs ( 3.05 usr +  0.02 sys =  3.07 CPU) @ 3200.65/s (n=9826)
+     nolog:  3 wallclock secs ( 3.18 usr +  0.01 sys =  3.19 CPU) @ 438384.64/s (n=1398447)
+                      Rate    log axslog_format axslog error_only_axslog   nolog
+log                 3201/s     --          -80%   -80%              -92%    -99%
+axslog_format      15987/s   399%            --    -1%              -61%    -96%
+axslog             16083/s   403%            1%     --              -61%    -96%
+error_only_axslog  41389/s  1193%          159%   157%                --    -91%
+nolog             438385/s 13597%         2642%  2626%              959%      --
 
 

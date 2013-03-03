@@ -5,21 +5,13 @@ use warnings;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/response_time combined ltsv error_only long_response_time logger/;
+use Plack::Util::Accessor qw/response_time combined ltsv format compiled_format error_only long_response_time logger/;
 use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
+use Apache::LogFormat::Compiler;
 
 our $VERSION = '0.03';
-
-## copy from Plack::Middleware::AccessLog
-my $tzoffset = POSIX::strftime("%z", localtime);
-if ( $tzoffset !~ /^[+-]\d{4}$/ ) {
-    my @t = localtime(time);
-    my $s = Time::Local::timegm(@t) - Time::Local::timelocal(@t);
-    $tzoffset = sprintf '%+03d%02u', int($s/3600), $s % 3600;
-}
-my @abbr = qw( Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec );
 
 sub prepare_app {
     my $self = shift;
@@ -27,6 +19,26 @@ sub prepare_app {
     $self->response_time(0) if ! defined $self->response_time;
     $self->error_only(0) if ! defined $self->error_only;
     $self->long_response_time(0) if ! defined $self->long_response_time;
+
+    my $format;
+    if ( $self->format ) {
+        $format = $self->format;
+    }
+    elsif ( $self->ltsv ) {
+        $format = join "\t",
+            qw!host:%h user:%u time:%t req:%r status:%>s size:%b referer:%{Referer}i ua:%{User-agent}i!;
+        $format .= "\t" . 'taken:%D' if $self->response_time;
+    }
+    elsif ( $self->combined ) {
+        $format = q!%h %l %u %t "%r" %>s %b "%{Referer}i" "%{User-agent}i"!;
+        $format .= ' %D' if $self->response_time;
+    }
+    else {
+        $format = q!%h %l %u %t "%r" %>s %b!;
+        $format .= ' %D' if $self->response_time;
+    }
+
+    $self->compiled_format(Apache::LogFormat::Compiler->new($format));
 }
 
 sub call {
@@ -75,39 +87,13 @@ sub log_line {
     ) {
         return;
     }
-
-    my @lt = localtime($t0->[0]);
-    my $t = sprintf '%02d/%s/%04d:%02d:%02d:%02d %s', $lt[3], $abbr[$lt[4]], $lt[5]+1900, 
-        $lt[2], $lt[1], $lt[0], $tzoffset;
-    my $log_line;
-
-    if ( $self->{ltsv} ) {
-        #host:%h user:%u time:%t req:%r status:%>s size:%b referer:%{Referer}i ua:%{User-agent}i
-        $log_line =
-            "host:" . _string($env->{REMOTE_ADDR}) . "\t"
-          . "user:" . _string($env->{REMOTE_USER}) . "\t"
-          . "time:[" .$t . "]\t"
-          . "req:" . _safe($env->{REQUEST_METHOD} . " " . $env->{REQUEST_URI} . " " . $env->{SERVER_PROTOCOL}) . "\t"
-          . "status:" . $res->[0] . "\t"
-          . "size:" . (defined $length ? "$length" : '-') . "\t"
-          . "referer:" . _string($env->{HTTP_REFERER}) . "\t"
-          . "ua:" .  _string($env->{HTTP_USER_AGENT}) 
-          . ( $self->{response_time} ? "\ttaken:$elapsed" : '')
-          . "\n";
-    }
-    else {
-        $log_line =  _string($env->{REMOTE_ADDR}) . " "
-            . '- '
-            . _string($env->{REMOTE_USER}) . " "
-            . q![!. $t . q!] !
-            . _safe(q!"! . $env->{REQUEST_METHOD} . " " . $env->{REQUEST_URI} . " " . $env->{SERVER_PROTOCOL} . q!" !)
-            . $res->[0] . " "
-            . (defined $length ? "$length" : '-')
-            . ($self->{combined} ? q! "! . _string($env->{HTTP_REFERER}) . q!" ! : '')
-            . ($self->{combined} ? q!"! . _string($env->{HTTP_USER_AGENT}) . q!"! : '')
-            . ($self->{response_time} ? " $elapsed" : '')
-            . "\n";
-    }
+    my $log_line = $self->{compiled_format}->log_line(
+        $env,
+        $res,
+        $length,
+        $elapsed,
+        $t0->[0],
+    );
 
     if ( ! $self->{logger} ) {
         $env->{'psgi.errors'}->print($log_line);
@@ -117,26 +103,13 @@ sub log_line {
     }
 }
 
-sub _safe {
-    my $string = shift;
-    $string =~ s/([^[:print:]])/"\\x" . unpack("H*", $1)/eg
-        if defined $string;
-    $string;
-}
-
-sub _string {
-    my $string = shift;
-    return '-' if ! defined $string;
-    return '-' if ! length $string;
-    _safe($string);
-}
 
 1;
 __END__
 
 =head1 NAME
 
-Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
+Plack::Middleware::AxsLog - Yet another AccessLog Middleware
 
 =head1 SYNOPSIS
 
@@ -152,10 +125,10 @@ Plack::Middleware::AxsLog - Fixed format but Fast AccessLog Middleware
 
 =head1 DESCRIPTION
 
-Alternative implementation of Plack::Middleware::AccessLog.
-Only supports combined, common and ltsv format, but 3x-4x faster than Plack::Middleware::AccessLog 
-in micro benchmarking.
-AxsLog also supports filter logs by response_time and status code.
+Alternative implementation of Plack::Middleware::AccessLog. 
+This module uses L<Apache::LogFormat::Compiler>, so 4x-5x faster than 
+Plack::Middleware::AccessLog in micro benchmarking.
+AxsLog also can set condition to display logs by response_time and status code.
 
 =head1 LOG FORMAT
 
@@ -168,17 +141,8 @@ AxsLog supports combined, common and ltsv format. And adds elapsed time in micro
   %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\" %D
   => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.1" 200 645 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1" 10941
 
-=item common (Common Log Format)
 
-  %h %l %u %t \"%r\" %>s %b %D 
-  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.0" 200 645 10941
 
-=item LTSV (Labeled Tab-separated Values)
-
-  host:%h<TAB>user:%u<TAB>time:%t<TAB>req:%r<TAB>status:%>s<TAB>size:%b<TAB>referer:%{Referer}i<TAB>ua:%{User-agent}i<TAB>taken:%D
-  => host:127.0.0.1<TAB>user:-<TAB>time:[23/Aug/2012:00:52:15 +0900]<TAB>req:GET / HTTP/1.1<TAB>status:200<TAB>size:645<TAB>"referer:-<TAB>ua:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1<TAB>taken:10941
-
-See also L<http://ltsv.org/>
 
 =back
 
@@ -190,13 +154,40 @@ See also L<http://ltsv.org/>
 
 log format. if disabled, "common" format used. default: 1 (combined format used)
 
+common (Common Log Format) format is
+
+  %h %l %u %t \"%r\" %>s %b
+  
+  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.0" 200 645
+
+combined (NCSA extended/combined log format) format is
+
+  %h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-agent}i\"
+  
+  => 127.0.0.1 - - [23/Aug/2012:00:52:15 +0900] "GET / HTTP/1.1" 200 645 "-" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1"
+
+
 =item ltsv: Bool
 
 use ltsv log format. default: 0
 
+LTSV (Labeled Tab-separated Values) format is
+
+  host:%h<TAB>user:%u<TAB>time:%t<TAB>req:%r<TAB>status:%>s<TAB>size:%b<TAB>referer:%{Referer}i<TAB>ua:%{User-agent}i
+  
+  => host:127.0.0.1<TAB>user:-<TAB>time:[23/Aug/2012:00:52:15 +0900]<TAB>req:GET / HTTP/1.1<TAB>status:200<TAB>size:645<TAB>"referer:-<TAB>ua:Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/21.0.1180.79 Safari/537.1
+
+See also L<http://ltsv.org/>
+
+=item format: String
+
+A format string.
+
+See details on perldoc L<Apache::LogFormat::Compiler>
+
 =item response_time: Bool
 
-Adds time taken to serve the request. default: 0
+Adds time taken to serve the request. default: 0. This args effect to common, combined and ltsv format.
 
 =item error_only: Bool
 
