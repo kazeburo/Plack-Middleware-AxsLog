@@ -13,3 +13,9 @@ MANIFEST.bak
 MYMETA.json
 MYMETA.yml
 nytprof
+/Plack-Middleware-AxsLog-*
+/.build
+/_build_params
+/Build
+!Build/
+!META.json
