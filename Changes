@@ -2,6 +2,11 @@ Revision history for Perl extension Plack::Middleware::AxsLog
 
 {{$NEXT}}
 
+0.11 2013-04-09T15:44:33Z
+
+        - updated POD
+        - re-packaging
+
 0.10    Sun Mar 3 16:38:54 2012
         - supports any format with Apache::LogFormat::Compiler
           be 3% faster than previous version
