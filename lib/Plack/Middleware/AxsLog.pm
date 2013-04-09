@@ -2,6 +2,7 @@ package Plack::Middleware::AxsLog;
 
 use strict;
 use warnings;
+use 5.8.5;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;

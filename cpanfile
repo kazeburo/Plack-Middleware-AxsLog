@@ -1,10 +1,8 @@
 requires 'Apache::LogFormat::Compiler', '0.12';
-requires 'HTTP::Status';
-requires 'Plack';
+requires 'HTTP::Message', '6.06';
+requires 'Plack' => '1.0023';
 
 on 'test' => sub {
-    requires 'Test::More';
-    requires 'HTTP::Request::Common';
-    requires 'HTTP::Message::PSGI';
+    requires 'Test::More' => '0.88';
 };
 
