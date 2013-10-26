@@ -6,7 +6,7 @@ use 5.8.5;
 use parent qw/Plack::Middleware/;
 use Plack::Util;
 use Time::HiRes qw/gettimeofday/;
-use Plack::Util::Accessor qw/response_time combined ltsv format compiled_format error_only long_response_time logger/;
+use Plack::Util::Accessor qw/response_time combined ltsv format format_options compiled_format error_only long_response_time logger/;
 use POSIX qw//;
 use Time::Local qw//;
 use HTTP::Status qw//;
@@ -21,9 +21,10 @@ sub prepare_app {
     $self->error_only(0) if ! defined $self->error_only;
     $self->long_response_time(0) if ! defined $self->long_response_time;
 
-    my $format;
+    my ($format, %format_options);
     if ( $self->format ) {
         $format = $self->format;
+        %format_options = %{ $self->format_options } if $self->format_options;
     }
     elsif ( $self->ltsv ) {
         $format = join "\t",
@@ -39,7 +40,7 @@ sub prepare_app {
         $format .= ' %D' if $self->response_time;
     }
 
-    $self->compiled_format(Apache::LogFormat::Compiler->new($format));
+    $self->compiled_format(Apache::LogFormat::Compiler->new($format, %format_options));
 }
 
 sub call {
