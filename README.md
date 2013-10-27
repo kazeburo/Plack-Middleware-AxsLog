@@ -71,6 +71,22 @@ Two middlewares have almost same performance now.
 
     See details on perldoc [Apache::LogFormat::Compiler](http://search.cpan.org/perldoc?Apache::LogFormat::Compiler)
 
+- format\_options
+
+    This variable is passed to [Apache::LogFormat::Compiler](http://search.cpan.org/perldoc?Apache::LogFormat::Compiler). You can add char\_handlers
+    and block\_handlers with this middleware.
+
+        enable 'AxsLog', 
+            format => '%z %{X_MYAPP_VARIABLE}Z', 
+            format_options => +{
+                char_handlers => +{
+                    'z' => sub { 'z' },
+                },
+                block_handlers => +{
+                    'Z' => sub { 'Z' },
+                },
+            };
+
 - response\_time: Bool
 
     Adds time taken to serve the request. default: 0. This args effect to common, combined and ltsv format.

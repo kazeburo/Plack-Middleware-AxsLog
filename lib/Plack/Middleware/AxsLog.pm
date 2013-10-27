@@ -180,6 +180,22 @@ A format string.
 
 See details on perldoc L<Apache::LogFormat::Compiler>
 
+=item format_options
+
+This variable is passed to L<Apache::LogFormat::Compiler>. You can add char_handlers
+and block_handlers with this middleware.
+
+    enable 'AxsLog', 
+        format => '%z %{X_MYAPP_VARIABLE}Z', 
+        format_options => +{
+            char_handlers => +{
+                'z' => sub { 'z' },
+            },
+            block_handlers => +{
+                'Z' => sub { 'Z' },
+            },
+        };
+
 =item response_time: Bool
 
 Adds time taken to serve the request. default: 0. This args effect to common, combined and ltsv format.
