@@ -2,6 +2,10 @@ Revision history for Perl extension Plack::Middleware::AxsLog
 
 {{$NEXT}}
 
+0.13 2013-10-27T14:15:09Z
+
+        - add format_options (Thank you zentooo)
+
 0.12 2013-09-02T06:06:34Z
 
         - re-packaging
