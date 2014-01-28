@@ -40,7 +40,7 @@ sub prepare_app {
         $format .= ' %D' if $self->response_time;
     }
 
-    $self->compiled_format(Apache::LogFormat::Compiler->new($format, %format_options));
+    $self->compiled_format(Apache::LogFormat::Compiler->new($format, %format_options)->code_ref);
 }
 
 sub call {
@@ -89,7 +89,7 @@ sub log_line {
     ) {
         return;
     }
-    my $log_line = $self->{compiled_format}->log_line(
+    my $log_line = $self->{compiled_format}->(
         $env,
         $res,
         $length,
