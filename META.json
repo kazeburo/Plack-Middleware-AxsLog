@@ -67,7 +67,7 @@
          "web" : "https://github.com/kazeburo/Plack-Middleware-AxsLog"
       }
    },
-   "version" : "0.13",
+   "version" : "0.20",
    "x_contributors" : [
       "zentooo <ankerasoy@gmail.com>",
       "Masahiro Nagano <kazeburo@gmail.com>"

@@ -2,6 +2,10 @@ Revision history for Perl extension Plack::Middleware::AxsLog
 
 {{$NEXT}}
 
+0.20 2014-01-29T03:02:52Z
+
+        - use POSIX::strftime::Compiler 0.30
+
 0.13 2013-10-27T14:15:09Z
 
         - add format_options (Thank you zentooo)
