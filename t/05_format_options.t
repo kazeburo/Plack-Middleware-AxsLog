@@ -27,8 +27,7 @@ use Test::More;
         client => sub {
             my $cb = shift;
             my $res = $cb->(GET "/");
-            chomp $log;
-            like $log, qr!z Z!;
+            is $log, qq!z Z\n!;
         };
 }
 

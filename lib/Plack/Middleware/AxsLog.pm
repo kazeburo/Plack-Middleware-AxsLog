@@ -98,10 +98,10 @@ sub log_line {
     );
 
     if ( ! $self->{logger} ) {
-        $env->{'psgi.errors'}->print($log_line);
+        $env->{'psgi.errors'}->print($log_line."\n");
     }
     else {
-        $self->{logger}->($log_line);
+        $self->{logger}->($log_line."\n");
     }
 }
 
