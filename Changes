@@ -2,6 +2,10 @@ Revision history for Perl extension Plack::Middleware::AxsLog
 
 {{$NEXT}}
 
+0.21 2014-02-20T06:14:17Z
+
+        - [BUGFIX] log_line that returns from ALFC coderef does not have "\n"
+
 0.20 2014-01-29T03:02:52Z
 
         - use POSIX::strftime::Compiler 0.30
